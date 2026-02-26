@@ -1,0 +1,38 @@
+# tr143.conf — TR-143 Server Configuration
+#
+# USAGE:
+#   Copy this file to tr143.conf in the same directory as the server binary.
+#   The server reads it at startup. Environment variables with the same names
+#   take precedence over values set here (useful for Docker / systemd overrides).
+#
+# SYNTAX:
+#   KEY = VALUE   # inline comments are supported
+#   Lines beginning with # are ignored.
+#   Whitespace around = is ignored.
+
+# ---- Ports ------------------------------------------------------------------
+
+DL_PORT  = 8080   # HTTP download test port
+UL_PORT  = 8081   # Raw TCP upload (blackhole) port
+UDP_PORT = 7      # UDP echo port
+                  # NOTE: ports below 1024 require root or CAP_NET_BIND_SERVICE.
+                  #   sudo setcap 'cap_net_bind_service=+ep' ./tr143-server
+
+# ---- Upload Performance Tuning ----------------------------------------------
+
+# Read buffer size in bytes.
+# Larger values reduce Read() syscall frequency at high throughput.
+# At 2 Gbps (~250 MB/s):
+#   32768   (32 KB) →  ~7,800 syscalls/sec  [original]
+#   262144 (256 KB) →  ~  977 syscalls/sec
+#   1048576  (1 MB) →  ~  238 syscalls/sec  [default]
+UL_BUFFER_SIZE = 1048576
+
+# Kernel TCP receive socket buffer (SO_RCVBUF) in bytes.
+# The OS default (~128-256 KB on most Linux) is the bottleneck at 2 Gbps.
+# Rule of thumb: ≥ 2 × bandwidth-delay-product.
+# At 2 Gbps / 5 ms RTT, BDP ≈ 1.25 MB — 4 MB gives comfortable headroom.
+TCP_RECV_BUFFER = 4194304
+
+# Seconds of inactivity (no data received) before closing an upload connection.
+IDLE_TIMEOUT_SEC = 10
